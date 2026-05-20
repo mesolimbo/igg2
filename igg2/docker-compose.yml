@@ -1,0 +1,7 @@
+services:
+  igg2:
+    build: .
+    image: igg2:local
+    volumes:
+      - ./data:/data
+    working_dir: /data

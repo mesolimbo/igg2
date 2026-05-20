@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+scikit-learn = "==1.8.0"
+pandas = "==3.0.3"
+pyyaml = "==6.0.3"
+click = "==8.4.0"
+
+[dev-packages]
+pytest = "==9.0.3"
+pytest-cov = "==7.1.0"
+
+[requires]
+python_version = "3.14"
