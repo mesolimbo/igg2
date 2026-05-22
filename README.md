@@ -1,11 +1,12 @@
 # igg2
 
-`igg2` is a micro language model for generating coherent multi-column CSV data.
-It learns the joint vocabulary, phrasing, and inter-column coupling of a small
-tabular dataset by clustering rows into topics and training a Markov chain per
-topic per column. The result is a tiny, inspectable JSON model that produces
-new rows which read like they came from the same source, without hauling in a
-neural stack or sending your data to an external API.
+`igg2` is a micro language model for generating coherent lines of text from a
+small tabular dataset. It learns the joint vocabulary, phrasing, and
+inter-column coupling of that dataset by clustering rows into topics and
+training a Markov chain per topic per column. The result is a tiny,
+inspectable JSON model that produces new lines which read like they came from
+the same source, without hauling in a neural stack or sending your data to an
+external API.
 
 ## Quick start
 
@@ -27,14 +28,18 @@ just work.
   row text. `k` is chosen automatically based on row count if not specified,
   and tiny clusters are merged into the largest neighbour.
 - **Train per-topic Markov chains** for every column: start-word, end-word,
-  length, and word-to-word transition distributions are estimated from the
-  rows assigned to that topic.
+  length, and transition distributions are estimated from the rows assigned
+  to that topic. Transitions are estimated at order 2 (conditioned on the
+  previous word pair), with an order-1 table retained as a backoff.
 - **Boundary conditioning** records, for each column, how the last word of the
   previous column biases the first word of the next column. This is what keeps
   generated rows internally coherent across columns.
-- **Generate** by sampling a topic from the prior, then walking the topic's
-  Markov chain for each column in turn, falling back to the global chain when
-  a topic-local transition is unseen.
+- **Generate** by sampling a topic from the prior — optionally flattened by
+  `--diversity` for wider thematic spread — then walking that topic's chains
+  per column. Each step interpolates the order-2 and order-1 tables so even
+  deterministic contexts stay varied, falls back to the global chain for
+  unseen transitions, and trims trailing glue words. By default the columns
+  are joined into one sentence with only the first word capitalised.
 
 The model is plain JSON: every probability, transition, and topic label is
 inspectable and diff-able.
@@ -74,7 +79,8 @@ Emits synthesized rows from a trained model to stdout.
 | ------------------- | ------- | -------------------------------------------- |
 | `--count INTEGER`   | `10`    | Number of rows to generate.                  |
 | `--seed INTEGER`    | none    | Seed for deterministic generation.           |
-| `--format {csv,tsv,json}` | `csv` | Output format.                          |
+| `--diversity FLOAT` | `1.0`   | Flatten topic priors; >1 spreads themes more.|
+| `--format {text,csv,tsv,json}` | `text` | Output format. `text` = one sentence per row.                          |
 
 ### `inspect`
 
@@ -105,7 +111,18 @@ All keys are optional. CLI flags always override sidecar values.
 Given the included `test/fixtures/sample.csv` (columns: `Character`, `Action`,
 `Discovery`), `generate` produces output like:
 
-**CSV** (default):
+**Text** (default) — each row's columns joined into one sentence, with only
+the first word capitalised:
+
+```
+Quiet librarian organising dusty archives reveals ancient prophecy
+Stoned postal carrier curing pandemic discovers werewolf lair
+Forgetful wizard brewing morning coffee creates new spell accidentally
+```
+
+The other formats keep the columns separate for tabular use.
+
+**CSV** (`--format csv`):
 
 ```
 Character,Action,Discovery

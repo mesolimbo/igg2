@@ -13,7 +13,7 @@ FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "sample.csv")
 
 def test_train_schema_version():
     model = train(FIXTURE, k=4, seed=42)
-    assert model["schema_version"] == 2
+    assert model["schema_version"] == 3
 
 
 def test_train_metadata_column_count():
@@ -42,13 +42,24 @@ def test_train_topic_columns_correct_length():
         assert len(topic["columns"]) == n_cols
         for chain in topic["columns"]:
             assert set(chain.keys()) >= {
-                "transitions", "start_words", "end_words", "lengths"
+                "transitions", "transitions2",
+                "start_words", "end_words", "lengths",
             }
 
 
 def test_train_global_columns_length():
     model = train(FIXTURE, k=3, seed=42)
     assert len(model["global_columns"]) == model["metadata"]["column_count"]
+
+
+def test_train_builds_order2_transitions():
+    model = train(FIXTURE, k=3, seed=42)
+    # At least one global column should have order-2 (word-pair) entries.
+    assert any(col.get("transitions2") for col in model["global_columns"])
+    # Every order-2 key is exactly two whitespace-joined tokens.
+    for col in model["global_columns"]:
+        for key in col["transitions2"]:
+            assert len(key.split(" ")) == 2
 
 
 def test_train_boundary_transitions_length_and_null_first():

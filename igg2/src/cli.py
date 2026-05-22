@@ -9,9 +9,16 @@ from src.train import train as train_model, load_sidecar
 from src.generate import generate_rows
 
 
+def _as_sentence(cells):
+    """Join a row's cells into one sentence: spaces between columns, only
+    the first word capitalised."""
+    text = " ".join(cells)
+    return text[:1].upper() + text[1:]
+
+
 @click.group()
 def cli():
-    """igg2 - micro language model for coherent CSV generation."""
+    """igg2 - micro language model for coherent text generation."""
 
 
 @cli.command("train")
@@ -50,17 +57,24 @@ def train_cmd(input_csv, output_json, k, no_boundaries, seed, min_cluster_size):
 @click.option("--count", default=10, type=int)
 @click.option("--seed", default=None, type=int)
 @click.option(
-    "--format", "fmt",
-    default="csv", type=click.Choice(["csv", "tsv", "json"]),
+    "--diversity", default=1.0, type=float,
+    help="Flatten topic priors: 1.0 = as trained, higher = more even.",
 )
-def generate_cmd(model_json, count, seed, fmt):
+@click.option(
+    "--format", "fmt",
+    default="text", type=click.Choice(["text", "csv", "tsv", "json"]),
+)
+def generate_cmd(model_json, count, seed, diversity, fmt):
     """Generate rows from a trained MODEL_JSON file."""
     with open(model_json, "r", encoding="utf-8") as fh:
         model = json.load(fh)
-    rows = generate_rows(model, count=count, seed=seed)
+    rows = generate_rows(model, count=count, seed=seed, diversity=diversity)
     columns = model["metadata"]["column_names"]
 
-    if fmt == "json":
+    if fmt == "text":
+        for r in rows:
+            click.echo(_as_sentence(r))
+    elif fmt == "json":
         out = [dict(zip(columns, r)) for r in rows]
         click.echo(json.dumps(out, indent=2))
     else:

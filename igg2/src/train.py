@@ -37,6 +37,7 @@ def _normalise(counter):
 def _empty_chain():
     return {
         "transitions": {},
+        "transitions2": {},
         "start_words": {},
         "end_words": {},
         "lengths": {},
@@ -44,8 +45,15 @@ def _empty_chain():
 
 
 def _build_chain(cells):
-    """Build a Markov chain dict from a list of cell strings."""
+    """Build a Markov chain dict from a list of cell strings.
+
+    Two transition tables are estimated: an order-2 table keyed on the
+    previous word pair ("w1 w2" -> next-word counts) and an order-1 table
+    keyed on the single previous word. Generation prefers the order-2
+    table for local fluency and backs off to order-1 when a pair is unseen.
+    """
     transitions = defaultdict(Counter)
+    transitions2 = defaultdict(Counter)
     start_counts = Counter()
     end_counts = Counter()
     length_counts = Counter()
@@ -59,10 +67,15 @@ def _build_chain(cells):
         end_counts[toks[-1]] += 1
         for a, b in zip(toks, toks[1:]):
             transitions[a][b] += 1
+        for a, b, c in zip(toks, toks[1:], toks[2:]):
+            transitions2[a + " " + b][c] += 1
 
     return {
         "transitions": {
             w: _normalise(nexts) for w, nexts in transitions.items()
+        },
+        "transitions2": {
+            pair: _normalise(nexts) for pair, nexts in transitions2.items()
         },
         "start_words": _normalise(start_counts),
         "end_words": _normalise(end_counts),
@@ -177,7 +190,7 @@ def train(csv_path, k=None, use_boundaries=True, seed=42, min_cluster_size=3):
         boundary_transitions = [None] * n_cols
 
     model = {
-        "schema_version": 2,
+        "schema_version": 3,
         "metadata": {
             "source_file": os.path.basename(csv_path),
             "row_count": n_rows,
