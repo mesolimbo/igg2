@@ -188,4 +188,4 @@ Makefile        Wrapper around the Docker workflow
 
 ## License
 
-See `LICENSE` for terms.
+[See `LICENSE` for terms.](https://www.apache.org/licenses/LICENSE-2.0)
