@@ -1,4 +1,4 @@
-# igg2: Idea Generator Generator v2
+# IGG2: Idea Generator Generator v2
 
 `igg2` is a micro language model for generating coherent lines of text from a
 small tabular (csv) dataset. It learns the joint vocabulary, phrasing, and
